@@ -20,7 +20,7 @@ app.use(express.static(path.join(__dirname, 'public')))
 
 if (app.get('env') === 'production') {
   app.use(express.errorHandler())
-  const redisUrl = new URL(process.env.REDISTOGO_URL)
+  const redisUrl = process.env.REDISTOGO_URL
   db = redis.createClient(redisUrl.port, redisUrl.hostname)
   db.auth(redisUrl.auth.split(":")[1])
 } else {
