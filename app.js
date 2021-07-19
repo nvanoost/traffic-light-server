@@ -28,6 +28,7 @@ if (app.get('env') === 'production') {
 
 authorizeWebhook = (req, res) => {
   if (app.get('secret') !== req.params.secret) {
+    console.error('USED INVALID SECRET:', req.params.secret)
     res.send(401)
     return false
   }
@@ -77,7 +78,7 @@ getPublicColors = (callback, data) => {
 
 // parse build status based on
 // https://documentation.codeship.com/basic/getting-started/webhooks/
-// NOT IS USE NOW
+// NOT IN USE NOW
 getCiColors = (callback, data) => {
   db.get('trafficlight:ci', function (err, buildStatus) {
     COLORS.forEach(function (color) { data[color] = false; })
@@ -162,7 +163,7 @@ app.post('/hetrix-webhook/:secret', (req, res) => {
     setColor(color, 'false')
   })
 
-  console.log('HETRIX WEBHOOK RECEIVED', req.body)
+  console.info('HETRIX WEBHOOK RECEIVED', req.body)
 
   let errors
   if(req.body.monitor_errors) {
@@ -177,62 +178,56 @@ app.post('/hetrix-webhook/:secret', (req, res) => {
     return res.send(201)
   }
 
-  //All errors to turn the light orange
-  const orange_errors = [
-    'timeout',
-    'keyword not found',
-    'http code 300',
-    'http code 301',
-    'http code 302',
-    'http code 303',
-    'http code 307',
-    'http code 308',
-  ]
-
-  //All errors to turn the light red
-  const red_errors = [
-    'http code 400',
-    'http code 401',
-    'http code 402',
-    'http code 403',
-    'http code 404',
-    'http code 405',
-    'http code 406',
-    'http code 408',
-    'http code 409',
-    'http code 414',
-    'http code 429',
-    'http code 431',
-    'http code 495',
-    'http code 496',
-    'http code 497',
-    'http code 500',
-    'http code 501',
-    'http code 502',
-    'http code 503',
-    'http code 504',
-    'http code 505',
-    'http code 511',
-    'http code 522',
-    'http code 525',
-    'connection failed',
-    'ssl failed',
-    'auth failed'
-  ]
 
   for(var key in errors) {
     let error = errors[key]
 
-    if(red_errors.indexOf(error) >= 0) {
-      //set the light on red
-      setColor('red', 'true')
-      return res.send(201)
-    } else if(orange_errors.indexOf(error) >= 0) {
-      //set the light orange
-      setColor('orange', 'true')
-      return res.send(201)
+    switch (error) {
+      case 'http code 401':
+      case 'http code 402':
+      case 'http code 400':
+      case 'http code 403':
+      case 'http code 404':
+      case 'http code 405':
+      case 'http code 406':
+      case 'http code 408':
+      case 'http code 409':
+      case 'http code 414':
+      case 'http code 429':
+      case 'http code 431':
+      case 'http code 495':
+      case 'http code 496':
+      case 'http code 497':
+      case 'http code 500':
+      case 'http code 501':
+      case 'http code 502':
+      case 'http code 503':
+      case 'http code 504':
+      case 'http code 505':
+      case 'http code 511':
+      case 'http code 522':
+      case 'http code 525':
+      case 'connection failed':
+      case 'ssl failed':
+      case 'auth failed':
+        setColor('red', 'true')
+        break;
+      case 'timeout':
+      case 'keyword not found':
+      case 'http code 300':
+      case 'http code 301':
+      case 'http code 302':
+      case 'http code 303':
+      case 'http code 307':
+      case 'http code 308':
+        setColor('orange', 'true')
+        break;
+      default:
+        console.warn('REICEVED UNRECOGNIZED ERROR:', errors[key])
+        setColor('red', 'true')
     }
   }
+  return res.send(201)
 })
 
 app.listen(app.get('port'))
