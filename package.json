@@ -1,5 +1,5 @@
 {
-  "name": "application-name",
+  "name": "prismanote-traffic-light",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -13,5 +13,18 @@
   },
   "engines": {
     "node": "16.5.x"
-  }
+  },
+  "description": "This is a small node.js server with the purpose to configure and serve a light configuration to a real traffic light, like this one:",
+  "main": "app.js",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nvanoost/traffic-light-server.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nvanoost/traffic-light-server/issues"
+  },
+  "homepage": "https://github.com/nvanoost/traffic-light-server#readme"
 }
