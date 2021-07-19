@@ -46,6 +46,9 @@ function authorizeUser(req, res) {
 
 function setColor(color, mode) {
   db.set('trafficlight:' + color, mode);
+  if(mode) {
+    console.info('Light is set to', color)
+  }
 }
 
 function getColors(callback) {
@@ -143,6 +146,8 @@ app.post('/hetrix-webhook/:secret', (req, res) => {
   COLORS.forEach(function (color) {
     setColor(color, false)
   })
+
+  console.log('HETRIX WEBHOOK RECEIVED', req.body)
 
   let errors
   if(req.body.monitor_errors) {
