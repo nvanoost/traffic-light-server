@@ -1,83 +1,87 @@
-var express = require('express');
-var redis = require('redis');
-var path = require('path');
-var url = require('url');
+const express = require('express')
+const redis = require('redis')
+const path = require('path')
+const url = require('url')
 
-var COLORS = ['red', 'yellow', 'green'];
+const COLORS = ['red', 'yellow', 'green']
 
-var app = express();
-var db;
+const app = express()
+let db
 
-app.set('secret', process.env.SECRET);
-app.set('port', process.env.PORT || 3000);
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'ejs');
-app.use(express.logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded());
-app.use(express.static(path.join(__dirname, 'public')));
+app.set('secret', process.env.SECRET)
+app.set('port', process.env.PORT || 3000)
+app.set('views', path.join(__dirname, 'views'))
+app.set('view engine', 'ejs')
+
+app.use(express.logger('dev'))
+app.use(express.json())
+app.use(express.urlencoded())
+app.use(express.static(path.join(__dirname, 'public')))
 
 if (app.get('env') === 'production') {
-  app.use(express.errorHandler());
-  var redisUrl = url.parse(process.env.REDISTOGO_URL);
-  db = redis.createClient(redisUrl.port, redisUrl.hostname);
-  db.auth(redisUrl.auth.split(":")[1]);
+  app.use(express.errorHandler())
+  const redisUrl = new URL(process.env.REDISTOGO_URL)
+  db = redis.createClient(redisUrl.port, redisUrl.hostname)
+  db.auth(redisUrl.auth.split(":")[1])
 } else {
-  db = redis.createClient();
+  db = redis.createClient()
 }
 
-function authorizeWebhook(req, res) {
+authorizeWebhook = (req, res) => {
   if (app.get('secret') !== req.params.secret) {
-    res.send(401);
-    return false;
+    res.send(401)
+    return false
   }
 
-  return true;
+  return true
 }
 
-function authorizeUser(req, res) {
+authorizeUser = (req, res) => {
   if (getLightMode() !== 'public') {
-    res.send(401);
-    return false;
+    res.send(401)
+    return false
   }
 
-  return true;
+  return true
 }
 
-function setColor(color, mode) {
-  db.set('trafficlight:' + color, mode);
+setColor = (color, mode) => {
+  db.set('trafficlight:' + color, mode)
   if(mode) {
     console.info('Light is set to', color)
   }
 }
 
-function getColors(callback) {
-  var mode = getLightMode();
-  var data = { mode: getLightMode() };
+getColors = (callback) => {
+  const mode = getLightMode()
+  let data = { mode: getLightMode() }
 
   if (mode === 'public') {
-    getPublicColors(callback, data);
+    getPublicColors(callback, data)
   } else if (mode === 'ci') {
-    getCiColors(callback, data);
+    getCiColors(callback, data)
   }
 }
 
-function getPublicColors(callback, data) {
-  var arr = COLORS.map(function (color) { return 'trafficlight:' + color; });
+getPublicColors = (callback, data) => {
+  let arr = COLORS.map(function (color) {
+    return 'trafficlight:' + color;
+  })
 
-  db.mget(arr, function (err, states) {
-    COLORS.forEach(function (color, index) {
-      data[color] = states[index] === 'true';
-    });
-    callback(null, data);
-  });
+  db.mget(arr, (err, states) => {
+    COLORS.forEach((color, index) => {
+      data[color] = states[index] === 'true'
+    })
+    callback(null, data)
+  })
 }
 
 // parse build status based on
 // https://documentation.codeship.com/basic/getting-started/webhooks/
-function getCiColors(callback, data) {
+// NOT IS USE NOW
+getCiColors = (callback, data) => {
   db.get('trafficlight:ci', function (err, buildStatus) {
-    COLORS.forEach(function (color) { data[color] = false; });
+    COLORS.forEach(function (color) { data[color] = false; })
 
     switch (buildStatus) {
     case 'error':
@@ -85,65 +89,71 @@ function getCiColors(callback, data) {
     case 'ignored':
     case 'blocked':
     case 'infrastructure_failure':
-      data.red = true;
+      data.red = true
       break;
     case 'testing':
     case 'waiting':
-      data.yellow = true;
+      data.yellow = true
       break;
     case 'success':
-      data.green = true;
-      break;
+      data.green = true
+      break
     }
 
-    callback(null, data);
-  });
+    callback(null, data)
+  })
 }
 
-function getLightMode() {
-  var mode = process.env.LIGHT_MODE;
-  if (mode !== 'public' && mode !== 'ci') throw('Unknown light mode!');
-  return mode;
+getLightMode = () => {
+  const mode = process.env.LIGHT_MODE
+  if (mode !== 'public' && mode !== 'ci') throw('Unknown light mode!')
+  return mode
 }
 
-app.get('/', function (req, res) {
-  res.render('index');
-});
+app.get('/', (req, res) => {
+  res.render('index')
+})
 
-app.get('/lights', function (req, res) {
-  getColors(function (err, colors) {
-    res.send(colors);
-  });
-});
+app.get('/lights', (req, res) => {
+  getColors((err, colors) => {
+    res.send(colors)
+  })
+})
 
-app.post('/lights', function (req, res) {
-  if (!authorizeUser(req, res)) return;
+app.post('/lights', (req, res) => {
+  if (!authorizeUser(req, res)) {
+    return
+  }
 
-  COLORS.forEach(function(color) {
+  COLORS.forEach((color) => {
     if (req.body.hasOwnProperty(color)) {
-      setColor(color, req.body[color]);
+      setColor(color, req.body[color])
     }
-  });
+  })
 
-  getColors(function (err, colors) {
-    res.send(colors);
-  });
-});
+  getColors((err, colors) => {
+    res.send(colors)
+  })
+})
 
-app.post('/ci/:secret', function (req, res) {
-  if (!authorizeWebhook(req, res)) return;
+app.post('/ci/:secret', (req, res) => {
+  if (!authorizeWebhook(req, res)) {
+    return
+  }
 
-  var status = req.body.build.status;
-  db.set('trafficlight:ci', status);
+  const status = req.body.build.status
+  db.set('trafficlight:ci', status)
 
-  res.send(201);
-});
+  res.send(201)
+})
 
 app.post('/hetrix-webhook/:secret', (req, res) => {
-  if (!authorizeWebhook(req, res)) return;
+  if (!authorizeWebhook(req, res)) {
+    return
+  }
 
   //disable all lights
-  COLORS.forEach(function (color) {
+  COLORS.forEach( (color) => {
     setColor(color, false)
   })
 
@@ -211,14 +221,13 @@ app.post('/hetrix-webhook/:secret', (req, res) => {
     if(red_errors.indexOf(error) >= 0) {
       //set the light on red
       setColor('red', true)
+      return res.send(201)
     } else if(orange_errors.indexOf(error) >= 0) {
       //set the light orange
       setColor('orange', true)
+      return res.send(201)
     }
   }
-
-  res.send(201)
-
 })
 
-app.listen(app.get('port'));
+app.listen(app.get('port'))
