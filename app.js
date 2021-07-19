@@ -46,7 +46,7 @@ authorizeUser = (req, res) => {
 
 setColor = (color, mode) => {
   db.set('trafficlight:' + color, mode)
-  if(mode) {
+  if(mode === 'true') {
     console.info('Light is set to', color)
   }
 }
@@ -104,8 +104,14 @@ getCiColors = (callback, data) => {
 }
 
 getLightMode = () => {
-  const mode = process.env.LIGHT_MODE
-  if (mode !== 'public' && mode !== 'ci') throw('Unknown light mode!')
+  let mode = process.env.LIGHT_MODE
+  if (mode !== 'public' && mode !== 'ci') {
+    if (app.get('env') === 'production') {
+      throw('Unknown light mode!')
+    } else {
+      mode = 'public'
+    }
+  }
   return mode
 }
 
@@ -153,7 +159,7 @@ app.post('/hetrix-webhook/:secret', (req, res) => {
 
   //disable all lights
   COLORS.forEach( (color) => {
-    setColor(color, false)
+    setColor(color, 'false')
   })
 
   console.log('HETRIX WEBHOOK RECEIVED', req.body)
@@ -164,10 +170,10 @@ app.post('/hetrix-webhook/:secret', (req, res) => {
      errors = req.body.monitor_errors
   } else if(req.body.resource_usage){
     //resource warning
-    setColor('red', true)
+    setColor('red', 'true')
     return res.send(201)
   } else {
-    setColor('green', true)
+    setColor('green', 'true')
     return res.send(201)
   }
 
@@ -219,11 +225,11 @@ app.post('/hetrix-webhook/:secret', (req, res) => {
 
     if(red_errors.indexOf(error) >= 0) {
       //set the light on red
-      setColor('red', true)
+      setColor('red', 'true')
       return res.send(201)
     } else if(orange_errors.indexOf(error) >= 0) {
       //set the light orange
-      setColor('orange', true)
+      setColor('orange', 'true')
       return res.send(201)
     }
   }

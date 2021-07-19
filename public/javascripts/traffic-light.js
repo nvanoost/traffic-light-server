@@ -2,7 +2,7 @@
   'use strict';
 
   var data = {};
-  var pollPeriod = 5 * 1000;
+  var pollPeriod = 3 * 1000;
   var pollTimeout = null;
 
   function load() {
