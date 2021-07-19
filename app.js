@@ -8,7 +8,7 @@ var COLORS = ['red', 'yellow', 'green'];
 var app = express();
 var db;
 
-app.set('secret', process.env.CI_SECRET);
+app.set('secret', process.env.SECRET);
 app.set('port', process.env.PORT || 3000);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -135,5 +135,85 @@ app.post('/ci/:secret', function (req, res) {
 
   res.send(201);
 });
+
+app.post('/hetrix-webhook/:secret', (req, res) => {
+  if (!authorizeWebhook(req, res)) return;
+
+  //disable all lights
+  COLORS.forEach(function (color) {
+    setColor(color, false)
+  })
+
+  let errors
+  if(req.body.monitor_errors) {
+    //ping/status monitor
+     errors = req.body.monitor_errors
+  } else if(req.body.resource_usage){
+    //resource warning
+    setColor('red', true)
+    return res.send(201)
+  } else {
+    setColor('green', true)
+    return res.send(201)
+  }
+
+  //All errors to turn the light orange
+  const orange_errors = [
+    'timeout',
+    'keyword not found',
+    'http code 300',
+    'http code 301',
+    'http code 302',
+    'http code 303',
+    'http code 307',
+    'http code 308',
+  ]
+
+  //All errors to turn the light red
+  const red_errors = [
+    'http code 400',
+    'http code 401',
+    'http code 402',
+    'http code 403',
+    'http code 404',
+    'http code 405',
+    'http code 406',
+    'http code 408',
+    'http code 409',
+    'http code 414',
+    'http code 429',
+    'http code 431',
+    'http code 495',
+    'http code 496',
+    'http code 497',
+    'http code 500',
+    'http code 501',
+    'http code 502',
+    'http code 503',
+    'http code 504',
+    'http code 505',
+    'http code 511',
+    'http code 522',
+    'http code 525',
+    'connection failed',
+    'ssl failed',
+    'auth failed'
+  ]
+
+  for(var key in errors) {
+    let error = errors[key]
+
+    if(red_errors.indexOf(error) >= 0) {
+      //set the light on red
+      setColor('red', true)
+    } else if(orange_errors.indexOf(error) >= 0) {
+      //set the light orange
+      setColor('orange', true)
+    }
+  }
+
+  res.send(201)
+
+})
 
 app.listen(app.get('port'));
