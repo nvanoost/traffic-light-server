@@ -1,7 +1,6 @@
 const express = require('express')
 const redis = require('redis')
 const path = require('path')
-const url = require('url')
 
 const COLORS = ['red', 'yellow', 'green']
 
@@ -20,7 +19,7 @@ app.use(express.static(path.join(__dirname, 'public')))
 
 if (app.get('env') === 'production') {
   app.use(express.errorHandler())
-  const redisUrl = process.env.REDISTOGO_URL
+  const redisUrl = new URL(process.env.REDISTOGO_URL)
   db = redis.createClient(redisUrl.port, redisUrl.hostname)
   db.auth(redisUrl.auth.split(":")[1])
 } else {
