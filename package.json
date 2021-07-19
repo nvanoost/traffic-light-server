@@ -6,11 +6,12 @@
     "start": "node app.js"
   },
   "dependencies": {
+    "ejs": "*",
     "express": "3.4.8",
-    "redis": "*",
-    "ejs": "*"
+    "node": "^16.5.0",
+    "redis": "*"
   },
   "engines": {
-    "node": "0.10.x"
+    "node": "16.5.x"
   }
 }
