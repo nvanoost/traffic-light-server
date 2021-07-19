@@ -236,3 +236,4 @@ app.post('/hetrix-webhook/:secret', (req, res) => {
 })
 
 app.listen(app.get('port'))
+console.info(`Server is listening at port ${app.get('port')}`)
